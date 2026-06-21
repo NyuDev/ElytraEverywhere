@@ -1,0 +1,13 @@
+# Normalize line endings. The Gradle wrapper script MUST stay LF or it breaks the
+# Linux CI runners ("bad interpreter"); Windows batch wrappers must stay CRLF.
+* text=auto eol=lf
+
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+gradlew text eol=lf
+*.sh    text eol=lf
+
+# Binaries Git must not touch
+*.jar binary
+*.png binary
+*.ico binary

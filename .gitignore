@@ -1,0 +1,33 @@
+# Gradle
+.gradle/
+build/
+out/
+classes/
+
+# Loom dev run directory
+run/
+
+# IDE - VS Code (contains machine-local JDK paths)
+.vscode/
+
+# IDE - IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# IDE - Eclipse
+.settings/
+.metadata
+bin/
+*.launch
+
+# OS
+*.DS_Store
+Thumbs.db
+
+# Local build/run logs (transient)
+*_log.txt
+
+# Stray tooling scaffold, not part of the mod
+/.github/modernize/

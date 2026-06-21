@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"id": "elytraeverywhere",
+	"version": "${version}",
+	"name": "Elytra Everywhere",
+	"description": "Baritone addon that unlocks elytra autopilot in every dimension (Overworld and End), not just the Nether.",
+	"authors": [
+		"NyuDev"
+	],
+	"contact": {
+		"homepage": "https://github.com/NyuDev/ElytraEverywhere",
+		"sources": "https://github.com/NyuDev/ElytraEverywhere",
+		"issues": "https://github.com/NyuDev/ElytraEverywhere/issues"
+	},
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"fr.nyuway.elytraeverywhere.ElytraEverywhere"
+		]
+	},
+	"mixins": [
+		"elytraeverywhere.mixins.json",
+		"elytraeverywhere.render.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "${minecraft_version}",
+		"java": ">=21",
+		"baritone-meteor": "*"
+	}
+}
