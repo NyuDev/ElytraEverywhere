@@ -109,16 +109,30 @@ be trusted. Treat them as best-effort until tested.
 
 ## Install on your real instance
 
-Drop **two** jars into `mods/`:
+Drop **two** jars into your instance's `mods/` folder — **Meteor's Baritone** (the
+`baritone-meteor` mod, *not* the official `baritone-api.jar`) **and** the matching
+ElytraEverywhere jar for the **same** Minecraft version:
 
-1. **Meteor's Baritone** for your Minecraft version (`baritone-meteor-*.jar`) — *not*
-   the official `baritone-api.jar` (see the note at the top).
-2. The matching **`elytraeverywhere-…+mc<your-version>.jar`** from the
-   [releases](https://github.com/NyuDev/ElytraEverywhere/releases).
+| Minecraft | Meteor Baritone (required) | ElytraEverywhere |
+|---|---|---|
+| **1.21.11** | [baritone-meteor ⬇](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.11-SNAPSHOT/baritone-1.21.11-20260103.131549-1.jar) | [download ⬇](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.0/elytraeverywhere-0.1.0%2Bmc1.21.11.jar) |
+| 1.21.10 | [baritone-meteor ⬇](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.10-SNAPSHOT/baritone-1.21.10-20251017.214148-1.jar) | [download ⬇](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.0/elytraeverywhere-0.1.0%2Bmc1.21.10.jar) |
+| 1.21.8 | [baritone-meteor ⬇](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.8-SNAPSHOT/baritone-1.21.8-20250801.133826-1.jar) | [download ⬇](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.0/elytraeverywhere-0.1.0%2Bmc1.21.8.jar) |
+| 1.21.5 | [baritone-meteor ⬇](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.5-SNAPSHOT/baritone-1.21.5-20250518.131358-1.jar) | [download ⬇](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.0/elytraeverywhere-0.1.0%2Bmc1.21.5.jar) |
+| 1.21.4 | [baritone-meteor ⬇](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.4-SNAPSHOT/baritone-1.21.4-20250105.184728-1.jar) | [download ⬇](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.0/elytraeverywhere-0.1.0%2Bmc1.21.4.jar) |
+| 1.21.3 | [baritone-meteor ⬇](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.3-SNAPSHOT/baritone-1.21.3-20241117.084726-1.jar) | [download ⬇](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.0/elytraeverywhere-0.1.0%2Bmc1.21.3.jar) |
+| 1.21.1 | [baritone-meteor ⬇](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.1-SNAPSHOT/baritone-1.21.1-20240826.213754-1.jar) | [download ⬇](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.0/elytraeverywhere-0.1.0%2Bmc1.21.1.jar) |
 
-No separate `nether-pathfinder` needed — Baritone bundles it. If you install the
-wrong Baritone (or none), Fabric stops with *"requires baritone-meteor, which is
-missing"* — that guard is intentional.
+The Baritone links point straight at Meteor's maven — one build per Minecraft version
+(`mod id baritone-meteor`, with `nether-pathfinder` bundled inside). Meteor doesn't put
+these on a normal download page, which is why the per-version direct links are listed
+here. If one ever 404s (a re-published snapshot), browse
+<https://maven.meteordev.org/#/snapshots/meteordevelopment/baritone> and grab the `.jar`
+under `<your-version>-SNAPSHOT/`.
+
+No separate `nether-pathfinder` needed — Baritone bundles it. If you install the wrong
+Baritone (or none), Fabric stops with *"requires baritone-meteor, which is missing"* —
+that guard is intentional.
 
 ## Use in-game
 
