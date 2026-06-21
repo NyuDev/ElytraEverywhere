@@ -5,6 +5,8 @@ import baritone.api.IBaritone;
 import fr.nyuway.elytraeverywhere.debug.EELog;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 /**
  * Finishes a water landing the instant the player splashes in.
@@ -26,9 +28,18 @@ public final class WaterLandingHelper {
 		}
 		final IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
 		if (baritone.getElytraProcess().isActive()) {
-			// Console only - no chat spam. The user wanted all addon output in the log.
 			EELog.log("[landing] touched water -> finishing landing at the surface ({})", player.getBlockPos());
 			baritone.getPathingBehavior().cancelEverything();
+			// On land Baritone prints its own "Done :)" when the path completes, but we
+			// cancel the water landing before it gets there, so that line never shows.
+			// Re-send it ourselves, in Baritone's exact format, so a water touchdown reads
+			// the same as a ground one. (Only here, i.e. only for water - never on land.)
+			player.sendMessage(
+					Text.literal("[").formatted(Formatting.DARK_PURPLE)
+							.append(Text.literal("Baritone").formatted(Formatting.LIGHT_PURPLE))
+							.append(Text.literal("]").formatted(Formatting.DARK_PURPLE))
+							.append(Text.literal(" Done :)").formatted(Formatting.GRAY)),
+					false);
 		}
 	}
 }
