@@ -1,6 +1,7 @@
 package fr.nyuway.elytraeverywhere;
 
 import fr.nyuway.elytraeverywhere.command.DebugCommand;
+import fr.nyuway.elytraeverywhere.compat.BaritoneCompat;
 import fr.nyuway.elytraeverywhere.debug.ChatConsoleMirror;
 import fr.nyuway.elytraeverywhere.runtime.PredictTerrainPolicy;
 import fr.nyuway.elytraeverywhere.runtime.RenderTweaks;
@@ -33,6 +34,17 @@ public final class ElytraEverywhere implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		// Wrong (or no) Baritone: our mixins target the Meteor fork's class names, which
+		// don't exist in the obfuscated official build. Stay inert and tell the player
+		// where to get the right files, without touching any Baritone class. The mixin
+		// configs are non-required, so the absent targets are skipped, not fatal.
+		if (!BaritoneCompat.isMeteorBaritonePresent()) {
+			BaritoneCompat.warnIncompatibleBaritone();
+			LOGGER.warn("'baritone-meteor' not found - ElytraEverywhere is idle (it hooks the Meteor "
+					+ "fork, not the official Baritone). See https://github.com/NyuDev/ElytraEverywhere");
+			return;
+		}
+
 		final PredictTerrainPolicy predictTerrainPolicy = new PredictTerrainPolicy();
 		final RenderTweaks renderTweaks = new RenderTweaks();
 		final WaterLandingHelper waterLandingHelper = new WaterLandingHelper();
