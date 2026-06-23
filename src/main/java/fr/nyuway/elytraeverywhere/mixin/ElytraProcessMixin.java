@@ -242,8 +242,12 @@ public abstract class ElytraProcessMixin {
 		if (player == null || world == null || world.getRegistryKey() != World.END) {
 			return;
 		}
-		if (!player.isGliding()) {
-			return; // not actually flying yet -> nothing to land
+		if (player.isOnGround()) {
+			// On the ground (still walking to a takeoff spot, or already landed) - nothing to
+			// take over. Using isOnGround() rather than isGliding()/isFallFlying() keeps this one
+			// source compiling across the whole 1.21.x line: that elytra method was renamed
+			// isFallFlying -> isGliding in 1.21.2, but isOnGround() has been stable throughout.
+			return;
 		}
 		final BlockPos dest = this.currentDestination();
 		if (dest == null) {
