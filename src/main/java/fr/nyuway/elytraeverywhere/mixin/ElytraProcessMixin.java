@@ -6,11 +6,15 @@ import baritone.api.process.PathingCommand;
 import baritone.api.utils.BetterBlockPos;
 import fr.nyuway.elytraeverywhere.debug.EELog;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -125,6 +129,10 @@ public abstract class ElytraProcessMixin {
 	@Shadow
 	public abstract void pathTo(Goal goal);
 
+	/** Baritone's public {@code currentDestination()} (= behavior.destination, or null). */
+	@Shadow(remap = true)
+	public abstract BlockPos currentDestination();
+
 	/**
 	 * Clamps an out-of-range elytra goal Y into the octree's reachable {@code [1,127]}
 	 * band instead of throwing "The y of the goal is not between 0 and 128".
@@ -175,11 +183,199 @@ public abstract class ElytraProcessMixin {
 	private void elytraeverywhere$capLandingChurn(BlockPos destination, boolean appendDestination, CallbackInfo ci) {
 		if (!appendDestination) {
 			landingRetries = 0; // fresh flight
+			elytraeverywhere$landingHandled = false; // a new user flight -> allow the End takeover to run again
 			return;
 		}
 		if (landingRetries > MAX_LANDING_RETRIES) {
 			EELog.log("[landing] giving up auto-landing after {} retries - gliding in instead (avoids native context-churn crash)", landingRetries);
 			ci.cancel(); // don't spin up yet another landing context
 		}
+	}
+
+	// ------------------------------------------------------------------------------------------
+	// End landing takeover
+	// ------------------------------------------------------------------------------------------
+	// Baritone's landing search (findSafeLandingSpot, inlined into onTick by the minifier) only
+	// accepts NETHERRACK/GRAVEL as ground, so in the End it never finds a real spot. The old
+	// isSafeBlock hack made it accept *any* block once a scan budget was exceeded - over the End
+	// void that means it eventually accepts an AIR block, returns a "landing spot" floating in the
+	// void, dives at it, sees there's nothing there ("bad landing spot, trying again") and loops.
+	//
+	// Here we own the decision in the End: when it's time to land, find the nearest *solid* ground
+	// to the goal ourselves (heightmap scan, rejecting void edges) and route the autopilot onto it,
+	// while setting goingToLandingSpot so Baritone's own finder is skipped entirely (no freeze, no
+	// void dive). Overworld and Nether are untouched - their landing already works.
+
+	/** Horizontal radius (blocks) searched around the goal for a solid landing surface. */
+	@Unique
+	private static final int ELYTRAEVERYWHERE_SEARCH_RADIUS = 112;
+
+	/** Air blocks required above the ground so the glide-down has clearance (matches Baritone). */
+	@Unique
+	private static final int ELYTRAEVERYWHERE_LANDING_CLEARANCE = 15;
+
+	/** Highest ground we'll target: ground + clearance must stay inside the octree's y &lt; 128. */
+	@Unique
+	private static final int ELYTRAEVERYWHERE_MAX_GROUND_Y = 127 - ELYTRAEVERYWHERE_LANDING_CLEARANCE;
+
+	/** Start landing once within this horizontal distance of the goal (Baritone itself uses 48). */
+	@Unique
+	private static final double ELYTRAEVERYWHERE_LAND_TRIGGER = 64.0;
+
+	/** True once we've routed this flight to a landing spot, so we don't re-route every tick. */
+	@Unique
+	private boolean elytraeverywhere$landingHandled;
+
+	@Unique
+	private int elytraeverywhere$handledDestX;
+
+	@Unique
+	private int elytraeverywhere$handledDestZ;
+
+	@Inject(method = "onTick(ZZ)Lbaritone/api/process/PathingCommand;", at = @At("HEAD"), remap = false)
+	private void elytraeverywhere$takeoverEndLanding(boolean calcFailed, boolean isSafeToCancel, CallbackInfoReturnable<PathingCommand> cir) {
+		final MinecraftClient mc = MinecraftClient.getInstance();
+		final ClientPlayerEntity player = mc.player;
+		final ClientWorld world = mc.world;
+		// Only the End suffers the void-landing bug; leave the (verified) Overworld and the
+		// untouched Nether landing alone.
+		if (player == null || world == null || world.getRegistryKey() != World.END) {
+			return;
+		}
+		if (!player.isGliding()) {
+			return; // not actually flying yet -> nothing to land
+		}
+		final BlockPos dest = this.currentDestination();
+		if (dest == null) {
+			return;
+		}
+
+		// Already routed this destination once; don't churn it every tick.
+		if (elytraeverywhere$landingHandled
+				&& dest.getX() == elytraeverywhere$handledDestX
+				&& dest.getZ() == elytraeverywhere$handledDestZ) {
+			return;
+		}
+
+		final ElytraProcessAccessor self = (ElytraProcessAccessor) (Object) this;
+		final boolean safety = self.elytraeverywhere$shouldLandForSafety();
+		final double dx = player.getX() - (dest.getX() + 0.5);
+		final double dz = player.getZ() - (dest.getZ() + 0.5);
+		final boolean nearGoal = (dx * dx + dz * dz) <= (ELYTRAEVERYWHERE_LAND_TRIGGER * ELYTRAEVERYWHERE_LAND_TRIGGER);
+		if (!nearGoal && !safety) {
+			return; // still cruising
+		}
+
+		// Emergency lands where we are; a normal completion lands at the goal.
+		final int originX = safety ? player.getBlockX() : dest.getX();
+		final int originZ = safety ? player.getBlockZ() : dest.getZ();
+		final BetterBlockPos ground = elytraeverywhere$findNearestEndGround(world, originX, originZ);
+
+		if (ground != null) {
+			final BetterBlockPos target = new BetterBlockPos(ground.x, ground.y + ELYTRAEVERYWHERE_LANDING_CLEARANCE, ground.z);
+			EELog.log("[landing] End: routing to nearest solid ground {} (descend target {})", ground, target);
+			self.elytraeverywhere$pathTo0(target, true);       // fly to & descend onto real ground
+			self.elytraeverywhere$setLandingSpot(target);      // endPos used by the LANDING state
+			self.elytraeverywhere$setGoingToLandingSpot(true); // make Baritone skip its own (void-diving) finder
+			elytraeverywhere$landingHandled = true;
+			elytraeverywhere$handledDestX = target.x;           // our reroute is now the destination; don't re-handle it
+			elytraeverywhere$handledDestZ = target.z;
+			return;
+		}
+
+		// No solid ground within range. Whatever happens, suppress Baritone's finder so it can
+		// neither freeze scanning the void nor pick an air block and dive.
+		self.elytraeverywhere$setGoingToLandingSpot(true);
+		if (safety) {
+			// Emergency with nowhere to land: descend in place instead of orbiting forever.
+			self.elytraeverywhere$setLandingSpot(new BetterBlockPos(player.getBlockX(), player.getBlockY(), player.getBlockZ()));
+			elytraeverywhere$landingHandled = true;
+			elytraeverywhere$handledDestX = dest.getX();
+			elytraeverywhere$handledDestZ = dest.getZ();
+			EELog.log("[landing] End emergency: no ground within {} blocks - descending in place", ELYTRAEVERYWHERE_SEARCH_RADIUS);
+		} else {
+			// Keep scanning on later ticks as chunks stream in / we drift toward an island.
+			EELog.log("[landing] End: no solid ground within {} blocks of {},{} yet - circling, not diving", ELYTRAEVERYWHERE_SEARCH_RADIUS, originX, originZ);
+		}
+	}
+
+	/**
+	 * Nearest solid, standable, non-edge ground column to {@code (originX, originZ)}, searched
+	 * outward ring by ring (so the closest wins) within {@link #ELYTRAEVERYWHERE_SEARCH_RADIUS}.
+	 * Returns the ground block itself, or {@code null} if nothing suitable is loaded nearby.
+	 */
+	@Unique
+	private BetterBlockPos elytraeverywhere$findNearestEndGround(ClientWorld world, int originX, int originZ) {
+		BetterBlockPos best = null;
+		long bestDistSq = Long.MAX_VALUE;
+		for (int r = 0; r <= ELYTRAEVERYWHERE_SEARCH_RADIUS; r++) {
+			// Every cell in ring r is at least r away; if we already have something closer, stop.
+			if (best != null && (long) r * r > bestDistSq) {
+				break;
+			}
+			for (int gx = -r; gx <= r; gx++) {
+				for (int gz = -r; gz <= r; gz++) {
+					if (Math.max(Math.abs(gx), Math.abs(gz)) != r) {
+						continue; // only the shell of this ring
+					}
+					final BetterBlockPos g = elytraeverywhere$groundAt(world, originX + gx, originZ + gz);
+					if (g == null) {
+						continue;
+					}
+					final long d = (long) gx * gx + (long) gz * gz;
+					if (d < bestDistSq) {
+						bestDistSq = d;
+						best = g;
+					}
+				}
+			}
+		}
+		return best;
+	}
+
+	/**
+	 * The top solid block at {@code (x, z)} if it makes a safe touchdown: loaded, within the
+	 * octree's reachable height, standable, with {@link #ELYTRAEVERYWHERE_LANDING_CLEARANCE} air
+	 * above, and not on the 1-block rim of an island (which would slide the player into the void).
+	 */
+	@Unique
+	private BetterBlockPos elytraeverywhere$groundAt(ClientWorld world, int x, int z) {
+		if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+			return null;
+		}
+		final int groundY = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z) - 1;
+		if (groundY < 0 || groundY > ELYTRAEVERYWHERE_MAX_GROUND_Y) {
+			return null; // void column, or too high for the octree
+		}
+		if (!elytraeverywhere$isStandable(world.getBlockState(new BlockPos(x, groundY, z)))) {
+			return null;
+		}
+		for (int dy = 1; dy <= ELYTRAEVERYWHERE_LANDING_CLEARANCE; dy++) {
+			if (!world.getBlockState(new BlockPos(x, groundY + dy, z)).isAir()) {
+				return null; // something overhead -> no room to glide down
+			}
+		}
+		for (int nx = -1; nx <= 1; nx++) {
+			for (int nz = -1; nz <= 1; nz++) {
+				if ((nx != 0 || nz != 0) && world.getBlockState(new BlockPos(x + nx, groundY, z + nz)).isAir()) {
+					return null; // an edge over the void
+				}
+			}
+		}
+		return new BetterBlockPos(x, groundY, z);
+	}
+
+	/** A block you can actually stand on: solid, not a fluid, not a hazard. */
+	@Unique
+	private boolean elytraeverywhere$isStandable(BlockState state) {
+		if (state.isAir() || !state.getFluidState().isEmpty()) {
+			return false;
+		}
+		final Block block = state.getBlock();
+		return block != Blocks.LAVA
+				&& block != Blocks.MAGMA_BLOCK
+				&& block != Blocks.FIRE
+				&& block != Blocks.SOUL_FIRE
+				&& block != Blocks.CACTUS;
 	}
 }
