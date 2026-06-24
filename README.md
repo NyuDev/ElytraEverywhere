@@ -1,4 +1,4 @@
-# Elytra Everywhere
+# Elytra Everywhere [Baritone Addon]
 
 A Fabric **Baritone addon** that unlocks Baritone's `#elytra` autopilot in **every
 dimension** — Overworld and End, not just the Nether. It adds no commands of its own; it
