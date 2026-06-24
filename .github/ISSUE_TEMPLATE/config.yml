@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 📖 User & developer wiki
+  - name: User & developer wiki
     url: https://github.com/NyuDev/ElytraEverywhere/wiki
     about: Installation, usage, troubleshooting, and the architecture docs. Check here first.
-  - name: 💬 Questions & discussion
+  - name: Questions & discussion
     url: https://github.com/NyuDev/ElytraEverywhere/discussions
     about: "Not a bug? Ask setup questions or share ideas here instead of opening an issue."

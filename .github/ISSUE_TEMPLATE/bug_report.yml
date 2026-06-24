@@ -1,4 +1,4 @@
-name: "🐞 Bug report"
+name: "Bug report"
 description: Something crashes, freezes, or misbehaves while flying with the addon.
 title: "[Bug]: "
 labels: ["bug"]
