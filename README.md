@@ -61,4 +61,19 @@ coordinates from the [CI matrix](.github/workflows/build.yml):
 gradlew build -Pminecraft_version=1.21.4 -Pyarn_mappings=1.21.4+build.8 -Pfabric_version=0.119.4+1.21.4
 ```
 
-MIT licensed.
+Full dev setup, the Meteor-Baritone obfuscation gotchas, and the per-version build
+matrix are in [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[developer wiki](https://github.com/NyuDev/ElytraEverywhere/wiki/Architecture).
+
+## Documentation
+
+- 📖 **[Wiki](https://github.com/NyuDev/ElytraEverywhere/wiki)** — installation, usage, troubleshooting, and architecture.
+- 🐞 **[Report a bug](https://github.com/NyuDev/ElytraEverywhere/issues/new/choose)** — please include the console log.
+- 🤝 **[Contributing](CONTRIBUTING.md)** · **[Code of Conduct](CODE_OF_CONDUCT.md)** · **[Security policy](SECURITY.md)**
+
+## License
+
+Elytra Everywhere © 2026 by NyuDev is licensed under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). You may share and
+adapt it, even commercially, as long as you give credit and license your
+adaptations under the same terms. See [LICENSE](LICENSE).

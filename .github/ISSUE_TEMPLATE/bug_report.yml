@@ -1,0 +1,94 @@
+name: "🐞 Bug report"
+description: Something crashes, freezes, or misbehaves while flying with the addon.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! A clear report with the **console log**
+        is worth ten vague ones. Please fill in as much as you can.
+
+  - type: checkboxes
+    id: prereqs
+    attributes:
+      label: Before you file
+      description: This addon only works on the **Meteor** fork of Baritone. The official cabaletta Baritone (`baritone-api.jar`) is fully obfuscated and is **not** supported.
+      options:
+        - label: I'm using **Meteor Baritone** (`baritone-meteor`), not the official cabaletta build.
+          required: true
+        - label: The Meteor Baritone jar and the addon jar are for the **same** Minecraft version.
+          required: true
+        - label: I searched existing issues and this isn't a duplicate.
+          required: true
+
+  - type: dropdown
+    id: mc-version
+    attributes:
+      label: Minecraft version
+      options:
+        - "1.21.11"
+        - "1.21.10"
+        - "1.21.8"
+        - "1.21.5"
+        - "1.21.4"
+        - "1.21.3"
+        - "1.21.1"
+        - "other (mention it in the description)"
+    validations:
+      required: true
+
+  - type: input
+    id: addon-version
+    attributes:
+      label: ElytraEverywhere version
+      description: The addon jar version, e.g. `0.1.3`. Shown in the filename and in the log on startup.
+      placeholder: "0.1.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dimension
+    attributes:
+      label: Dimension where it happened
+      options:
+        - "Overworld"
+        - "The End"
+        - "The Nether"
+        - "Not dimension-specific"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did the addon do instead?
+      placeholder: |
+        I ran `#goto 1000 0` then `#elytra` in the End. It flew toward the goal but then...
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Equip elytra + fireworks
+        2. `#goto <x> <z>`
+        3. `#elytra`
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console log
+      description: |
+        Paste the relevant part of `logs/latest.log`. The addon logs under `ElytraEverywhere/Debug`;
+        run `/eedebug` in game to also mirror Baritone's chat to the console. If the game crashed,
+        attach the `crash-reports/` file (or `hs_err_pid*.log` for a JVM-level crash).
+      render: text
+    validations:
+      required: false

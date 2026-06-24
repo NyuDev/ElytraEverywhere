@@ -12,7 +12,7 @@
 		"sources": "https://github.com/NyuDev/ElytraEverywhere",
 		"issues": "https://github.com/NyuDev/ElytraEverywhere/issues"
 	},
-	"license": "MIT",
+	"license": "CC-BY-SA-4.0",
 	"environment": "client",
 	"entrypoints": {
 		"client": [

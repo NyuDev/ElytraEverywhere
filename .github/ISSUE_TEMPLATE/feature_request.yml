@@ -1,0 +1,44 @@
+name: "✨ Feature request"
+description: Suggest an improvement to the addon.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? Great. Keep in mind the addon's scope: it patches **Meteor Baritone**
+        at runtime to make `#elytra` work outside the Nether. Changes that fight Baritone's
+        own design, or that depend on the official obfuscated Baritone, are out of scope.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the pain point or the missing capability.
+      placeholder: "When I fly in the End, ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should the addon do? Be as concrete as you can.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about, or workarounds you currently use.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This works with the **Meteor** Baritone fork (not the official obfuscated build).
+          required: true
