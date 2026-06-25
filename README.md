@@ -20,7 +20,10 @@ Drop **both** jars into your instance's `mods/`, for the **same** Minecraft vers
 
 | Minecraft | Meteor Baritone (required) | ElytraEverywhere |
 |---|---|---|
-| **1.21.11** | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.11-SNAPSHOT/baritone-1.21.11-20260103.131549-1.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc1.21.11.jar) |
+| **26.1.2** | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/26.1-SNAPSHOT/baritone-26.1-20260423.173134-2.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc26.1.2.jar) |
+| 26.1.1 | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/26.1-SNAPSHOT/baritone-26.1-20260423.173134-2.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc26.1.1.jar) |
+| 26.1 | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/26.1-SNAPSHOT/baritone-26.1-20260423.173134-2.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc26.1.jar) |
+| 1.21.11 | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.11-SNAPSHOT/baritone-1.21.11-20260103.131549-1.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc1.21.11.jar) |
 | 1.21.10 | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.10-SNAPSHOT/baritone-1.21.10-20251017.214148-1.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc1.21.10.jar) |
 | 1.21.8 | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.8-SNAPSHOT/baritone-1.21.8-20250801.133826-1.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc1.21.8.jar) |
 | 1.21.5 | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.5-SNAPSHOT/baritone-1.21.5-20250518.131358-1.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc1.21.5.jar) |
@@ -29,10 +32,11 @@ Drop **both** jars into your instance's `mods/`, for the **same** Minecraft vers
 | 1.21.1 | [baritone-meteor](https://maven.meteordev.org/snapshots/meteordevelopment/baritone/1.21.1-SNAPSHOT/baritone-1.21.1-20240826.213754-1.jar) | [download](https://github.com/NyuDev/ElytraEverywhere/releases/download/v0.1.3/elytraeverywhere-0.1.3%2Bmc1.21.1.jar) |
 
 Newest jars are always on the [releases page](https://github.com/NyuDev/ElytraEverywhere/releases/latest).
-**Only 1.21.11 is verified in game**; the rest of the 1.21.x line builds but each still
-needs its Baritone hooks confirmed. No separate `nether-pathfinder` is needed — Baritone
-bundles it. The Baritone links go straight to Meteor's maven (one build per Minecraft
-version); if one ever 404s, browse
+**1.21.11 and 26.1.2 are verified in game**; the other versions build but each still needs
+its Baritone hooks confirmed. The whole 26.1.x line shares one Meteor Baritone
+(`26.1-SNAPSHOT`) and, like Minecraft 26.1 itself, **requires Java 25+** to run (the 1.21.x
+line stays on Java 21). No separate `nether-pathfinder` is needed — Baritone bundles it. The
+Baritone links go straight to Meteor's maven; if one ever 404s, browse
 <https://maven.meteordev.org/#/snapshots/meteordevelopment/baritone>.
 
 ## Usage
