@@ -2,8 +2,8 @@ package fr.nyuway.elytraeverywhere.compat;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 /**
  * Baritone-flavour compatibility gate.
@@ -40,18 +40,18 @@ public final class BaritoneCompat {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			boolean inWorld = client.player != null;
 			if (inWorld && !wasInWorld[0]) {
-				client.player.sendMessage(notice(), false);
+				client.player.displayClientMessage(notice(), false);
 			}
 			wasInWorld[0] = inWorld;
 		});
 	}
 
-	private static Text notice() {
-		return Text.literal("[ElytraEverywhere] ").formatted(Formatting.LIGHT_PURPLE)
-				.append(Text.literal("Incompatible Baritone — this addon needs ").formatted(Formatting.GRAY))
-				.append(Text.literal("Meteor's Baritone").formatted(Formatting.WHITE))
-				.append(Text.literal(" (not the official one), so it stays idle. Get the right Baritone + addon for your version:")
-						.formatted(Formatting.GRAY))
-				.append(Text.literal("\n  " + PROJECT_URL).formatted(Formatting.AQUA));
+	private static Component notice() {
+		return Component.literal("[ElytraEverywhere] ").withStyle(ChatFormatting.LIGHT_PURPLE)
+				.append(Component.literal("Incompatible Baritone — this addon needs ").withStyle(ChatFormatting.GRAY))
+				.append(Component.literal("Meteor's Baritone").withStyle(ChatFormatting.WHITE))
+				.append(Component.literal(" (not the official one), so it stays idle. Get the right Baritone + addon for your version:")
+						.withStyle(ChatFormatting.GRAY))
+				.append(Component.literal("\n  " + PROJECT_URL).withStyle(ChatFormatting.AQUA));
 	}
 }

@@ -1,8 +1,8 @@
 package fr.nyuway.elytraeverywhere.runtime;
 
 import baritone.api.BaritoneAPI;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +28,12 @@ public final class PredictTerrainPolicy {
 	/** True when we, and not the user, turned prediction off - so we may restore it. */
 	private boolean disabledByUs;
 
-	public void onClientTick(MinecraftClient client) {
-		if (client.world == null) {
+	public void onClientTick(Minecraft client) {
+		if (client.level == null) {
 			return;
 		}
 
-		final boolean inNether = client.world.getRegistryKey() == World.NETHER;
+		final boolean inNether = client.level.dimension() == Level.NETHER;
 		final var predictTerrain = BaritoneAPI.getSettings().elytraPredictTerrain;
 
 		if (!inNether) {

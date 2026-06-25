@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 public interface IRendererMixin {
 
 	@ModifyConstant(
-			method = "a(Ljava/awt/Color;)Lnet/minecraft/client/render/BufferBuilder;",
+			method = "a(Ljava/awt/Color;)Lcom/mojang/blaze3d/vertex/BufferBuilder;",
 			constant = @Constant(floatValue = 0.4f),
 			remap = true
 	)

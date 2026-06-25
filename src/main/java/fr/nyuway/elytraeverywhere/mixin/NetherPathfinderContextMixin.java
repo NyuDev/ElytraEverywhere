@@ -3,10 +3,10 @@ package fr.nyuway.elytraeverywhere.mixin;
 import baritone.api.utils.Pair;
 import dev.babbaj.pathfinder.NetherPathfinder;
 import dev.babbaj.pathfinder.PathSegment;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -47,19 +47,19 @@ public abstract class NetherPathfinderContextMixin {
 			method = "a(Ljava/lang/ref/SoftReference;)V",
 			at = @At(
 					value = "INVOKE",
-					target = "Lnet/minecraft/world/chunk/WorldChunk;getSectionArray()[Lnet/minecraft/world/chunk/ChunkSection;",
+					target = "Lnet/minecraft/world/level/chunk/LevelChunk;getSections()[Lnet/minecraft/world/level/chunk/LevelChunkSection;",
 					remap = true
 			),
 			remap = true
 	)
-	private ChunkSection[] elytraeverywhere$sectionsForFlightBand(WorldChunk chunk) {
-		ChunkSection[] all = chunk.getSectionArray();
+	private LevelChunkSection[] elytraeverywhere$sectionsForFlightBand(LevelChunk chunk) {
+		LevelChunkSection[] all = chunk.getSections();
 		// Number of sections below world y 0 (4 in the Overworld, 0 in Nether/End).
-		int offset = (-chunk.getBottomY()) >> 4;
+		int offset = (-chunk.getMinY()) >> 4;
 		if (offset <= 0) {
 			return all;
 		}
-		ChunkSection[] band = new ChunkSection[8];
+		LevelChunkSection[] band = new LevelChunkSection[8];
 		for (int i = 0; i < 8 && (i + offset) < all.length; i++) {
 			band[i] = all[i + offset];
 		}
@@ -105,8 +105,8 @@ public abstract class NetherPathfinderContextMixin {
 	 * obstructed. Targets the minified {@code raytrace(Vec3,Vec3)} and
 	 * {@code raytrace(double[],double[])}.
 	 */
-	@Inject(method = "a(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;)Z", at = @At("HEAD"), cancellable = true, remap = true)
-	private void elytraeverywhere$guardSingleRaytrace(Vec3d start, Vec3d end, CallbackInfoReturnable<Boolean> cir) {
+	@Inject(method = "a(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;)Z", at = @At("HEAD"), cancellable = true, remap = true)
+	private void elytraeverywhere$guardSingleRaytrace(Vec3 start, Vec3 end, CallbackInfoReturnable<Boolean> cir) {
 		if (elytraeverywhere$elytraGone()
 				|| !elytraeverywhere$pointSafe(start.x, start.y, start.z)
 				|| !elytraeverywhere$pointSafe(end.x, end.y, end.z)
@@ -173,7 +173,7 @@ public abstract class NetherPathfinderContextMixin {
 	 * <p>In the Nether everything is already 0..127, so this is a no-op there.
 	 */
 	@Redirect(
-			method = "a(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/BlockPos;)Ldev/babbaj/pathfinder/PathSegment;",
+			method = "a(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;)Ldev/babbaj/pathfinder/PathSegment;",
 			at = @At(
 					value = "INVOKE",
 					target = "Ldev/babbaj/pathfinder/NetherPathfinder;pathFind(JIIIIIIZZIZ)Ldev/babbaj/pathfinder/PathSegment;",

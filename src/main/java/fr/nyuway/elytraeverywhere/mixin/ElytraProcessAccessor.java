@@ -1,7 +1,7 @@
 package fr.nyuway.elytraeverywhere.mixin;
 
 import baritone.api.utils.BetterBlockPos;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;

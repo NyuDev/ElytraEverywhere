@@ -5,7 +5,7 @@ import fr.nyuway.elytraeverywhere.debug.ChatConsoleMirror;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * Registers {@code /eedebug}, which toggles {@link ChatConsoleMirror} (mirroring
@@ -26,7 +26,7 @@ public final class DebugCommand {
 
 	private int toggle(CommandContext<FabricClientCommandSource> ctx) {
 		boolean on = mirror.toggle();
-		ctx.getSource().sendFeedback(Text.literal("[ElytraEverywhere] Debug console logging " + (on ? "ON" : "OFF")));
+		ctx.getSource().sendFeedback(Component.literal("[ElytraEverywhere] Debug console logging " + (on ? "ON" : "OFF")));
 		return 1;
 	}
 }

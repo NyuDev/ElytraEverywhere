@@ -5,17 +5,17 @@ import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.process.PathingCommand;
 import baritone.api.utils.BetterBlockPos;
 import fr.nyuway.elytraeverywhere.debug.EELog;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -30,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>The original method begins with:
  * <pre>{@code
- * if (ctx.player() == null || ctx.player().getWorld().getRegistryKey() != World.NETHER) {
+ * if (ctx.player() == null || ctx.player().level().dimension() != Level.NETHER) {
  *     return; // silently refuses to fly in any other dimension
  * }
  * }</pre>
@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>This {@code pathTo0} is the single choke point for elytra: both the public
  * {@code pathTo} API and Baritone's own landing logic funnel through it, and if
  * it returns early no {@code ElytraBehavior} is ever created, so nothing flies.
- * We redirect only the {@code getRegistryKey()} call evaluated by that gate and
+ * We redirect only the {@code dimension()} call evaluated by that gate and
  * report {@code NETHER}, which makes the check pass everywhere. Because the
  * redirect is scoped to this one call site, every other place Baritone reads the
  * real dimension keeps working normally.
@@ -50,22 +50,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * a future Baritone snapshot reshuffles the minified names, re-run
  * {@code javap -p -c} on {@code baritone/process/ElytraProcess.class} and update
  * the selector to whichever private {@code (BlockPos, boolean)void} method holds
- * the {@code != World.NETHER} gate.
+ * the {@code != Level.NETHER} gate.
  */
 @Mixin(targets = "baritone.process.ElytraProcess", remap = false)
 public abstract class ElytraProcessMixin {
 
 	@Redirect(
-			method = "a(Lnet/minecraft/util/math/BlockPos;Z)V",
+			method = "a(Lnet/minecraft/core/BlockPos;Z)V",
 			at = @At(
 					value = "INVOKE",
-					target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/registry/RegistryKey;",
+					target = "Lnet/minecraft/world/level/Level;dimension()Lnet/minecraft/resources/ResourceKey;",
 					remap = true
 			),
 			remap = true
 	)
-	private RegistryKey<World> elytraeverywhere$reportNether(World world) {
-		return World.NETHER;
+	private ResourceKey<Level> elytraeverywhere$reportNether(Level world) {
+		return Level.NETHER;
 	}
 
 	/**
@@ -84,10 +84,10 @@ public abstract class ElytraProcessMixin {
 	 *
 	 * <p>Target: the minified {@code isSafeBlock(Block)} = {@code a(Block)Z}.
 	 */
-	@Inject(method = "a(Lnet/minecraft/block/Block;)Z", at = @At("HEAD"), cancellable = true, remap = true)
+	@Inject(method = "a(Lnet/minecraft/world/level/block/Block;)Z", at = @At("HEAD"), cancellable = true, remap = true)
 	private static void elytraeverywhere$allowGroundLanding(Block block, CallbackInfoReturnable<Boolean> cir) {
-		final MinecraftClient client = MinecraftClient.getInstance();
-		if (client.world == null || client.world.getRegistryKey() == World.NETHER) {
+		final Minecraft client = Minecraft.getInstance();
+		if (client.level == null || client.level.dimension() == Level.NETHER) {
 			return; // Nether: leave the original netherrack/gravel logic alone.
 		}
 		final boolean solidLand = block != Blocks.AIR
@@ -146,7 +146,7 @@ public abstract class ElytraProcessMixin {
 	@Inject(method = "pathTo(Lbaritone/api/pathing/goals/Goal;)V", at = @At("HEAD"), cancellable = true, remap = false)
 	private void elytraeverywhere$clampGoalY(Goal goal, CallbackInfo ci) {
 		if (goal instanceof GoalBlock block && (block.y <= 0 || block.y >= 128)) {
-			int clampedY = MathHelper.clamp(block.y, 1, 127);
+			int clampedY = Mth.clamp(block.y, 1, 127);
 			EELog.log("[goal] elytra goal y {} out of octree range -> retargeting at y {}", block.y, clampedY);
 			this.pathTo(new GoalBlock(block.x, clampedY, block.z));
 			ci.cancel();
@@ -179,7 +179,7 @@ public abstract class ElytraProcessMixin {
 	 * <p>A normal {@code pathTo} (appendDestination=false, e.g. a new {@code #elytra})
 	 * resets the retry counter - that's a fresh flight.
 	 */
-	@Inject(method = "a(Lnet/minecraft/util/math/BlockPos;Z)V", at = @At("HEAD"), cancellable = true, remap = true)
+	@Inject(method = "a(Lnet/minecraft/core/BlockPos;Z)V", at = @At("HEAD"), cancellable = true, remap = true)
 	private void elytraeverywhere$capLandingChurn(BlockPos destination, boolean appendDestination, CallbackInfo ci) {
 		if (!appendDestination) {
 			landingRetries = 0; // fresh flight
@@ -234,19 +234,19 @@ public abstract class ElytraProcessMixin {
 
 	@Inject(method = "onTick(ZZ)Lbaritone/api/process/PathingCommand;", at = @At("HEAD"), remap = false)
 	private void elytraeverywhere$takeoverEndLanding(boolean calcFailed, boolean isSafeToCancel, CallbackInfoReturnable<PathingCommand> cir) {
-		final MinecraftClient mc = MinecraftClient.getInstance();
-		final ClientPlayerEntity player = mc.player;
-		final ClientWorld world = mc.world;
+		final Minecraft mc = Minecraft.getInstance();
+		final LocalPlayer player = mc.player;
+		final ClientLevel world = mc.level;
 		// Only the End suffers the void-landing bug; leave the (verified) Overworld and the
 		// untouched Nether landing alone.
-		if (player == null || world == null || world.getRegistryKey() != World.END) {
+		if (player == null || world == null || world.dimension() != Level.END) {
 			return;
 		}
-		if (player.isOnGround()) {
+		if (player.onGround()) {
 			// On the ground (still walking to a takeoff spot, or already landed) - nothing to
-			// take over. Using isOnGround() rather than isGliding()/isFallFlying() keeps this one
+			// take over. Using onGround() rather than isGliding()/isFallFlying() keeps this one
 			// source compiling across the whole 1.21.x line: that elytra method was renamed
-			// isFallFlying -> isGliding in 1.21.2, but isOnGround() has been stable throughout.
+			// isFallFlying -> isGliding in 1.21.2, but onGround() has been stable throughout.
 			return;
 		}
 		final BlockPos dest = this.currentDestination();
@@ -309,7 +309,7 @@ public abstract class ElytraProcessMixin {
 	 * Returns the ground block itself, or {@code null} if nothing suitable is loaded nearby.
 	 */
 	@Unique
-	private BetterBlockPos elytraeverywhere$findNearestEndGround(ClientWorld world, int originX, int originZ) {
+	private BetterBlockPos elytraeverywhere$findNearestEndGround(ClientLevel world, int originX, int originZ) {
 		BetterBlockPos best = null;
 		long bestDistSq = Long.MAX_VALUE;
 		for (int r = 0; r <= ELYTRAEVERYWHERE_SEARCH_RADIUS; r++) {
@@ -343,11 +343,11 @@ public abstract class ElytraProcessMixin {
 	 * above, and not on the 1-block rim of an island (which would slide the player into the void).
 	 */
 	@Unique
-	private BetterBlockPos elytraeverywhere$groundAt(ClientWorld world, int x, int z) {
-		if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+	private BetterBlockPos elytraeverywhere$groundAt(ClientLevel world, int x, int z) {
+		if (!world.hasChunk(x >> 4, z >> 4)) {
 			return null;
 		}
-		final int groundY = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z) - 1;
+		final int groundY = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
 		if (groundY < 0 || groundY > ELYTRAEVERYWHERE_MAX_GROUND_Y) {
 			return null; // void column, or too high for the octree
 		}

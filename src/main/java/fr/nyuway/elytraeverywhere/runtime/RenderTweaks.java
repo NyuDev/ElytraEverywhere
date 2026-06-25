@@ -2,8 +2,8 @@ package fr.nyuway.elytraeverywhere.runtime;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,17 +25,17 @@ public final class RenderTweaks {
 
 	private static final int SETTLE_TICKS = 40; // ~2s, let Baritone load its config first
 
-	private World lastWorld;
+	private Level lastWorld;
 	private int ticksInWorld;
 	private boolean appliedForThisWorld;
 
-	public void onClientTick(MinecraftClient client) {
-		if (client.world == null) {
+	public void onClientTick(Minecraft client) {
+		if (client.level == null) {
 			lastWorld = null;
 			return;
 		}
-		if (client.world != lastWorld) {
-			lastWorld = client.world;
+		if (client.level != lastWorld) {
+			lastWorld = client.level;
 			ticksInWorld = 0;
 			appliedForThisWorld = false;
 			return;

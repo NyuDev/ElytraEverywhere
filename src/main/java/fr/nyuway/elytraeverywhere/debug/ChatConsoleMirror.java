@@ -1,6 +1,6 @@
 package fr.nyuway.elytraeverywhere.debug;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ public final class ChatConsoleMirror {
 	}
 
 	/** Registered on {@code ClientReceiveMessageEvents.GAME}. */
-	public void onGameMessage(Text message, boolean overlay) {
+	public void onGameMessage(Component message, boolean overlay) {
 		if (enabled && !overlay) {
 			LOGGER.info("{}", message.getString());
 		}

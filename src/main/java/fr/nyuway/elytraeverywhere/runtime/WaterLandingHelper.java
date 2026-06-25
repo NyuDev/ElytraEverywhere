@@ -3,10 +3,10 @@ package fr.nyuway.elytraeverywhere.runtime;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import fr.nyuway.elytraeverywhere.debug.EELog;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 
 /**
  * Finishes a water landing the instant the player splashes in.
@@ -21,24 +21,24 @@ import net.minecraft.util.Formatting;
  */
 public final class WaterLandingHelper {
 
-	public void onClientTick(MinecraftClient client) {
-		final ClientPlayerEntity player = client.player;
-		if (player == null || !player.isTouchingWater()) {
+	public void onClientTick(Minecraft client) {
+		final LocalPlayer player = client.player;
+		if (player == null || !player.isInWater()) {
 			return;
 		}
 		final IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
 		if (baritone.getElytraProcess().isActive()) {
-			EELog.log("[landing] touched water -> finishing landing at the surface ({})", player.getBlockPos());
+			EELog.log("[landing] touched water -> finishing landing at the surface ({})", player.blockPosition());
 			baritone.getPathingBehavior().cancelEverything();
 			// On land Baritone prints its own "Done :)" when the path completes, but we
 			// cancel the water landing before it gets there, so that line never shows.
 			// Re-send it ourselves, in Baritone's exact format, so a water touchdown reads
 			// the same as a ground one. (Only here, i.e. only for water - never on land.)
-			player.sendMessage(
-					Text.literal("[").formatted(Formatting.DARK_PURPLE)
-							.append(Text.literal("Baritone").formatted(Formatting.LIGHT_PURPLE))
-							.append(Text.literal("]").formatted(Formatting.DARK_PURPLE))
-							.append(Text.literal(" Done :)").formatted(Formatting.GRAY)),
+			player.displayClientMessage(
+					Component.literal("[").withStyle(ChatFormatting.DARK_PURPLE)
+							.append(Component.literal("Baritone").withStyle(ChatFormatting.LIGHT_PURPLE))
+							.append(Component.literal("]").withStyle(ChatFormatting.DARK_PURPLE))
+							.append(Component.literal(" Done :)").withStyle(ChatFormatting.GRAY)),
 					false);
 		}
 	}
