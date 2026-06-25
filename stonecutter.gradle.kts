@@ -4,8 +4,3 @@ plugins {
 }
 
 stonecutter active "1.21.11" /* [SC] DO NOT EDIT */
-
-// Build every version's jar at once: `gradlew chiseledBuild`.
-stonecutter tasks {
-    order("build")
-}

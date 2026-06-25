@@ -55,7 +55,12 @@ public abstract class NetherPathfinderContextMixin {
 	private LevelChunkSection[] elytraeverywhere$sectionsForFlightBand(LevelChunk chunk) {
 		LevelChunkSection[] all = chunk.getSections();
 		// Number of sections below world y 0 (4 in the Overworld, 0 in Nether/End).
+		// Mojang renamed getMinBuildHeight() -> getMinY() after 1.21.1.
+		//? if <1.21.3 {
+		/*int offset = (-chunk.getMinBuildHeight()) >> 4;*/
+		//?} else {
 		int offset = (-chunk.getMinY()) >> 4;
+		//?}
 		if (offset <= 0) {
 			return all;
 		}

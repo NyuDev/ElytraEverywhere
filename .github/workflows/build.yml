@@ -12,32 +12,36 @@ permissions:
 
 jobs:
   build:
-    name: Build MC ${{ matrix.mc }}
+    name: Build MC ${{ matrix.node }}
     runs-on: ubuntu-latest
     strategy:
       # One Minecraft version failing to build must not cancel the others - each
-      # row is an independent jar. Only 1.21.11 is runtime-verified in game; the
-      # rest are best-effort (the Meteor-Baritone minified mixin targets still need
-      # per-version checking), so we want to see exactly which ones compile.
+      # node is an independent jar produced by the Stonecutter version tree.
       fail-fast: false
       matrix:
-        include:
-          - { mc: "1.21.1",  yarn: "1.21.1+build.3",  fabric: "0.116.12+1.21.1" }
-          - { mc: "1.21.3",  yarn: "1.21.3+build.2",  fabric: "0.114.1+1.21.3" }
-          - { mc: "1.21.4",  yarn: "1.21.4+build.8",  fabric: "0.119.4+1.21.4" }
-          - { mc: "1.21.5",  yarn: "1.21.5+build.1",  fabric: "0.128.2+1.21.5" }
-          - { mc: "1.21.8",  yarn: "1.21.8+build.1",  fabric: "0.136.1+1.21.8" }
-          - { mc: "1.21.10", yarn: "1.21.10+build.3", fabric: "0.138.4+1.21.10" }
-          - { mc: "1.21.11", yarn: "1.21.11+build.6", fabric: "0.141.4+1.21.11" }
+        node:
+          - "1.21.1"
+          - "1.21.3"
+          - "1.21.4"
+          - "1.21.5"
+          - "1.21.8"
+          - "1.21.10"
+          - "1.21.11"
+          - "26.1"
+          - "26.1.1"
+          - "26.1.2"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      # JDK 25 for everyone: Minecraft 26.x requires it, and Gradle configures every
+      # Stonecutter node (incl. the 26.x ones) on every build, so even the 1.21.x jobs
+      # need it. The 1.21.x compiles still target Java 21 bytecode (--release 21).
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -45,31 +49,27 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ matrix.mc }}-${{ hashFiles('**/*.gradle', 'gradle.properties') }}
-          restore-keys: gradle-${{ matrix.mc }}-
+          key: gradle-${{ matrix.node }}-${{ hashFiles('**/*.gradle*', 'gradle.properties', 'versions.json') }}
+          restore-keys: gradle-${{ matrix.node }}-
 
       - name: Override Windows-only Gradle JVM args
         # The committed gradle.properties pins a Windows AF_UNIX tmpdir (C:/Temp) that
-        # this dev machine needs; on Linux runners a user-level gradle.properties wins
+        # the dev machine needs; on Linux runners a user-level gradle.properties wins
         # and gives the daemon a clean, portable -Xmx instead.
         run: |
           mkdir -p ~/.gradle
-          echo "org.gradle.jvmargs=-Xmx3G" >> ~/.gradle/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4G" >> ~/.gradle/gradle.properties
 
       - name: Build
         run: |
           chmod +x ./gradlew
-          ./gradlew build \
-            -Pminecraft_version=${{ matrix.mc }} \
-            -Pyarn_mappings=${{ matrix.yarn }} \
-            -Pfabric_version=${{ matrix.fabric }} \
-            --stacktrace --no-daemon
+          ./gradlew ":${{ matrix.node }}:build" --stacktrace --no-daemon
 
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
-          name: elytraeverywhere-mc${{ matrix.mc }}
-          path: build/libs/*.jar
+          name: elytraeverywhere-mc${{ matrix.node }}
+          path: versions/${{ matrix.node }}/build/libs/*.jar
           if-no-files-found: error
 
   release:
