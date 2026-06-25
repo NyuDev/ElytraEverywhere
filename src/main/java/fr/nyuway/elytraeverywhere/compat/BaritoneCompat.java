@@ -40,7 +40,11 @@ public final class BaritoneCompat {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			boolean inWorld = client.player != null;
 			if (inWorld && !wasInWorld[0]) {
+				//? if >=26.1 {
+				/*client.player.sendSystemMessage(notice());*/
+				//?} else {
 				client.player.displayClientMessage(notice(), false);
+				//?}
 			}
 			wasInWorld[0] = inWorld;
 		});

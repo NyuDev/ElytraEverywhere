@@ -34,12 +34,15 @@ public final class WaterLandingHelper {
 			// cancel the water landing before it gets there, so that line never shows.
 			// Re-send it ourselves, in Baritone's exact format, so a water touchdown reads
 			// the same as a ground one. (Only here, i.e. only for water - never on land.)
-			player.displayClientMessage(
-					Component.literal("[").withStyle(ChatFormatting.DARK_PURPLE)
-							.append(Component.literal("Baritone").withStyle(ChatFormatting.LIGHT_PURPLE))
-							.append(Component.literal("]").withStyle(ChatFormatting.DARK_PURPLE))
-							.append(Component.literal(" Done :)").withStyle(ChatFormatting.GRAY)),
-					false);
+			final Component done = Component.literal("[").withStyle(ChatFormatting.DARK_PURPLE)
+					.append(Component.literal("Baritone").withStyle(ChatFormatting.LIGHT_PURPLE))
+					.append(Component.literal("]").withStyle(ChatFormatting.DARK_PURPLE))
+					.append(Component.literal(" Done :)").withStyle(ChatFormatting.GRAY));
+			//? if >=26.1 {
+			/*player.sendSystemMessage(done);*/
+			//?} else {
+			player.displayClientMessage(done, false);
+			//?}
 		}
 	}
 }
