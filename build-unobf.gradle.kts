@@ -30,7 +30,9 @@ repositories {
 
 // A single 26.1-SNAPSHOT Baritone covers the whole 26.1.x line (depends mc 26.1/26.1.1/26.1.2).
 val fabricApiVersion = mapOf(
-    "26.1.2" to "0.145.1+26.1",
+    "26.1" to "0.145.1+26.1",
+    "26.1.1" to "0.145.4+26.1.1",
+    "26.1.2" to "0.145.4+26.1.2",
 )[mcVersion] ?: error("No Fabric API version mapped for Minecraft $mcVersion")
 
 val baritoneVersion = "26.1-SNAPSHOT"

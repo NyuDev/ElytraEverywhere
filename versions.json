@@ -8,6 +8,8 @@
     "1.21.8",
     "1.21.10",
     "1.21.11",
+    "26.1:26.1:build-unobf.gradle.kts",
+    "26.1.1:26.1.1:build-unobf.gradle.kts",
     "26.1.2:26.1.2:build-unobf.gradle.kts"
   ],
   "vcsVersion": "1.21.11"
