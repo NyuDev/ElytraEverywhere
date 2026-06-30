@@ -1,8 +1,10 @@
 package fr.nyuway.elytraeverywhere;
 
 import fr.nyuway.elytraeverywhere.command.DebugCommand;
+import fr.nyuway.elytraeverywhere.command.ElytraFollowCommand;
 import fr.nyuway.elytraeverywhere.compat.BaritoneCompat;
 import fr.nyuway.elytraeverywhere.debug.ChatConsoleMirror;
+import fr.nyuway.elytraeverywhere.runtime.ElytraFollowTracker;
 import fr.nyuway.elytraeverywhere.runtime.PredictTerrainPolicy;
 import fr.nyuway.elytraeverywhere.runtime.RenderTweaks;
 import fr.nyuway.elytraeverywhere.runtime.WaterLandingHelper;
@@ -48,16 +50,19 @@ public final class ElytraEverywhere implements ClientModInitializer {
 		final PredictTerrainPolicy predictTerrainPolicy = new PredictTerrainPolicy();
 		final RenderTweaks renderTweaks = new RenderTweaks();
 		final WaterLandingHelper waterLandingHelper = new WaterLandingHelper();
+		final ElytraFollowTracker elytraFollowTracker = new ElytraFollowTracker();
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			predictTerrainPolicy.onClientTick(client);
 			renderTweaks.onClientTick(client);
 			waterLandingHelper.onClientTick(client);
+			elytraFollowTracker.onClientTick(client);
 		});
 
 		final ChatConsoleMirror chatMirror = new ChatConsoleMirror();
 		new DebugCommand(chatMirror).register();
+		new ElytraFollowCommand(elytraFollowTracker).register();
 		ClientReceiveMessageEvents.GAME.register(chatMirror::onGameMessage);
 
-		LOGGER.info("Baritone elytra fixed for every dimension. '/eedebug' toggles chat-to-console logging.");
+		LOGGER.info("Baritone elytra fixed for every dimension. '/eedebug' toggles logging; '/eefollow <player>' follows while gliding.");
 	}
 }
