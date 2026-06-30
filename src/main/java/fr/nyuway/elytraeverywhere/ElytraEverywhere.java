@@ -1,7 +1,6 @@
 package fr.nyuway.elytraeverywhere;
 
 import fr.nyuway.elytraeverywhere.command.DebugCommand;
-import fr.nyuway.elytraeverywhere.command.ElytraFollowCommand;
 import fr.nyuway.elytraeverywhere.compat.BaritoneCompat;
 import fr.nyuway.elytraeverywhere.debug.ChatConsoleMirror;
 import fr.nyuway.elytraeverywhere.runtime.ElytraFollowTracker;
@@ -24,6 +23,8 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>{@link PredictTerrainPolicy} keeps {@code elytraPredictTerrain} off
  *       outside the Nether;</li>
+ *   <li>{@link ElytraFollowTracker} intercepts {@code #follow} while gliding and
+ *       keeps the elytra autopilot aimed at the moving target;</li>
  *   <li>{@link ChatConsoleMirror} + {@code /eedebug} mirror chat to the console
  *       on demand for readable diagnostics.</li>
  * </ul>
@@ -60,9 +61,8 @@ public final class ElytraEverywhere implements ClientModInitializer {
 
 		final ChatConsoleMirror chatMirror = new ChatConsoleMirror();
 		new DebugCommand(chatMirror).register();
-		new ElytraFollowCommand(elytraFollowTracker).register();
 		ClientReceiveMessageEvents.GAME.register(chatMirror::onGameMessage);
 
-		LOGGER.info("Baritone elytra fixed for every dimension. '/eedebug' toggles logging; '/eefollow <player>' follows while gliding.");
+		LOGGER.info("Baritone elytra fixed for every dimension. '#follow' now tracks moving targets while gliding.");
 	}
 }
