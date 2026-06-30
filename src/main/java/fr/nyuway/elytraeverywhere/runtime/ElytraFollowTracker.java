@@ -15,45 +15,51 @@ import java.util.Comparator;
 /**
  * Keeps Baritone's elytra autopilot aimed at a moving {@code #follow} target.
  *
- * <p>When the player is gliding ({@link LocalPlayer#isFallFlying()}) and Baritone's
- * {@link IFollowProcess} has an active filter (set by {@code #follow player <name>} or
- * {@code #follow entities}), this tracker continuously updates the elytra destination
- * toward the closest matching entity so the autopilot never tries to land just because
- * the target has moved.
+ * <p>Usage: {@code #follow player <name>} (or any {@code #follow} variant), then take off.
+ * No new command is needed. While the player is gliding ({@link LocalPlayer#isFallFlying()})
+ * and Baritone's {@link IFollowProcess} has an active filter, this tracker:
+ * <ol>
+ *   <li>Continuously steers the elytra autopilot toward the closest matching entity.</li>
+ *   <li>Exposes {@link #followActive} so {@link fr.nyuway.elytraeverywhere.mixin.ElytraProcessMixin}
+ *       can suppress the normal landing sequence while following (landing is only allowed
+ *       for genuine safety situations — low durability or fireworks).</li>
+ * </ol>
  *
- * <h3>Why a live update is necessary</h3>
- * {@link IElytraProcess#pathTo} sets a <em>fixed</em> destination. Once the player
- * comes within ~48 blocks of that point, {@code ElytraProcess} triggers its landing
- * sequence. If the target has moved in the meantime the player would land at an empty
- * spot instead of chasing them. This tracker pre-empts that by issuing a fresh
- * {@code pathTo} whenever:
- * <ul>
- *   <li>the target has moved more than {@value #REPATH_DIST_BLOCKS} blocks from the last
- *       issued goal, or</li>
- *   <li>the player is within {@value #APPROACH_DIST_BLOCKS} blocks of the current goal
- *       (before ElytraProcess's own 48-block landing trigger fires).</li>
- * </ul>
- * A minimum interval of {@value #MIN_REPATH_TICKS} ticks (~1 s) between two repaths
- * avoids thrashing the native pathfinder.
+ * <p>On the ground, {@link IFollowProcess} handles walking as before; this class does
+ * nothing when {@code isFallFlying()} is false.
  *
- * <p>On the ground the {@code IFollowProcess} continues handling walking normally;
- * this class does nothing when {@code isFallFlying()} is false.
+ * <h3>Why landing suppression is needed</h3>
+ * {@link IElytraProcess#pathTo} sets a <em>fixed</em> destination. Once the player comes
+ * within ~48 blocks of that point, {@code ElytraProcess} triggers its landing sequence
+ * (via {@code pathTo0(spot, appendDestination=true)}). If the target keeps moving — or if
+ * we are simply catching up — the landing sequence fires well before we actually want to stop.
+ * {@link fr.nyuway.elytraeverywhere.mixin.ElytraProcessMixin#elytraeverywhere$capLandingChurn}
+ * already intercepts every {@code pathTo0(*, true)} call; adding an
+ * {@link #followActive} check there suppresses the landing while following is active,
+ * while still allowing emergency landings ({@code shouldLandForSafety()}).
  */
 public final class ElytraFollowTracker {
 
-    /** Repath when the target moves this many blocks from the last issued goal. */
+    /**
+     * True while the player is gliding with an active follow target.
+     * Read by {@link fr.nyuway.elytraeverywhere.mixin.ElytraProcessMixin} to suppress
+     * the normal landing sequence.
+     */
+    public static boolean followActive = false;
+
+    /** Repath when the target has moved this many blocks from the last issued goal. */
     private static final int REPATH_DIST_BLOCKS = 8;
     private static final int REPATH_DIST_SQ = REPATH_DIST_BLOCKS * REPATH_DIST_BLOCKS;
 
     /**
      * Repath when the player is within this many blocks of the current goal.
-     * Must be greater than ElytraProcess's own 48-block landing trigger so we always
-     * beat it to the punch.
+     * Chosen to be larger than ElytraProcess's own 48-block landing trigger so we
+     * issue a fresh {@code pathTo} before that trigger has a chance to fire.
      */
     private static final int APPROACH_DIST_BLOCKS = 55;
     private static final int APPROACH_DIST_SQ = APPROACH_DIST_BLOCKS * APPROACH_DIST_BLOCKS;
 
-    /** Minimum client ticks between two consecutive repaths (~1 second at 20 tps). */
+    /** Minimum client ticks between two consecutive repaths (~1 s at 20 tps). */
     private static final int MIN_REPATH_TICKS = 20;
 
     /** Don't issue a new goal when already this close to the target (avoid ramming). */
@@ -61,28 +67,31 @@ public final class ElytraFollowTracker {
     private static final int MIN_DIST_SQ = MIN_DIST_BLOCKS * MIN_DIST_BLOCKS;
 
     private BlockPos lastGoal;
-    private int ticksSinceRepath = MIN_REPATH_TICKS; // start ready to repath immediately
+    private int ticksSinceRepath = MIN_REPATH_TICKS;
 
     public void onClientTick(Minecraft client) {
         final LocalPlayer player = client.player;
         if (player == null || !player.isFallFlying()) {
+            followActive = false;
             return;
         }
 
         final IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
         final IFollowProcess followProcess = baritone.getFollowProcess();
         if (followProcess.currentFilter() == null) {
+            followActive = false;
             return;
         }
 
+        // Signal ElytraProcessMixin to suppress normal landing while we're following.
+        followActive = true;
         ticksSinceRepath++;
         if (ticksSinceRepath < MIN_REPATH_TICKS) {
             return;
         }
 
-        // Use Baritone's own entity stream — identical source to what FollowProcess
-        // uses internally, but without the followTargetMaxDistance cap so long-range
-        // elytra tracking works regardless of that setting.
+        // Use Baritone's own entity stream — same source as FollowProcess uses internally,
+        // but without the followTargetMaxDistance cap so long-range elytra tracking works.
         final Entity target = baritone.getPlayerContext().entitiesStream()
                 .filter(e -> !e.equals(player) && e.isAlive() && followProcess.currentFilter().test(e))
                 .min(Comparator.comparingDouble(player::distanceToSqr))
@@ -103,11 +112,13 @@ public final class ElytraFollowTracker {
         // Repath if there is no active goal yet...
         final boolean noActiveGoal = lastGoal == null || !elytra.isActive();
 
-        // ...or the target has drifted far enough from the last goal...
+        // ...or the target has drifted from the last goal...
         final boolean targetMoved = lastGoal != null && targetPos.distSqr(lastGoal) > REPATH_DIST_SQ;
 
-        // ...or we're getting close to the last goal and risk triggering ElytraProcess's
-        // landing sequence (which fires at <48 blocks from the path's final node).
+        // ...or we're getting close to the last goal. A repath here issues a fresh path
+        // (resetting ElytraProcess's "complete" state) before the 48-block landing trigger
+        // can fire. Combined with the landing suppression above, this keeps the elytra
+        // perpetually chasing the target rather than trying to land.
         final double playerToGoalSq = lastGoal != null
                 ? player.distanceToSqr(lastGoal.getX() + 0.5, lastGoal.getY() + 0.5, lastGoal.getZ() + 0.5)
                 : Double.MAX_VALUE;
@@ -119,11 +130,5 @@ public final class ElytraFollowTracker {
             ticksSinceRepath = 0;
             EELog.log("[elytrafollow] repath -> {} ({})", targetPos, target.getName().getString());
         }
-    }
-
-    /** Resets internal state. Call when a new follow is started or follow is cancelled. */
-    public void reset() {
-        lastGoal = null;
-        ticksSinceRepath = MIN_REPATH_TICKS;
     }
 }

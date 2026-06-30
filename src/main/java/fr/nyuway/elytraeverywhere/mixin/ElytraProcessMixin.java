@@ -5,6 +5,7 @@ import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.process.PathingCommand;
 import baritone.api.utils.BetterBlockPos;
 import fr.nyuway.elytraeverywhere.debug.EELog;
+import fr.nyuway.elytraeverywhere.runtime.ElytraFollowTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -166,18 +167,24 @@ public abstract class ElytraProcessMixin {
 	}
 
 	/**
-	 * Caps the landing-spot churn that crashes the game.
+	 * Caps the landing-spot churn that crashes the game, and suppresses landing entirely
+	 * while an elytra-follow is active.
 	 *
-	 * <p>Each retry re-runs {@code pathTo0(spot, true)}, which builds a fresh
-	 * {@code ElytraBehavior}/{@code NetherPathfinderContext} and destroys the old
-	 * one asynchronously. Over water the landing never settles, so this churns
-	 * rapidly while async raytraces are still pointing at the freed native context
-	 * -> use-after-free -> {@code EXCEPTION_ACCESS_VIOLATION}. After a couple of
-	 * retries we simply stop building new landing paths; the player keeps gliding
-	 * down and the water-landing helper finishes the job, with no more churn.
+	 * <p><b>Landing suppression ({@link ElytraFollowTracker#followActive}).</b>
+	 * {@code pathTo0(spot, appendDestination=true)} is how ElytraProcess initiates its landing
+	 * sequence. While {@code #follow} is driving the elytra toward a moving target we never
+	 * want a normal landing, so we cancel every such call here. Safety landings
+	 * ({@code shouldLandForSafety()} — low durability or fireworks) still go through so the
+	 * player isn't left flying forever on an empty elytra.
 	 *
-	 * <p>A normal {@code pathTo} (appendDestination=false, e.g. a new {@code #elytra})
-	 * resets the retry counter - that's a fresh flight.
+	 * <p><b>Churn cap.</b> Each landing-spot retry re-runs {@code pathTo0(spot, true)}, which
+	 * builds a fresh {@code ElytraBehavior}/{@code NetherPathfinderContext} and destroys the old
+	 * one asynchronously. Over water the landing never settles, so this churns rapidly while
+	 * async raytraces are still pointing at the freed native context -> use-after-free ->
+	 * {@code EXCEPTION_ACCESS_VIOLATION}. After the first retry we stop; the player glides down
+	 * and the water-landing helper finishes the job with no further churn.
+	 *
+	 * <p>A normal {@code pathTo} (appendDestination=false) resets the retry counter.
 	 */
 	@Inject(method = "a(Lnet/minecraft/core/BlockPos;Z)V", at = @At("HEAD"), cancellable = true, remap = true)
 	private void elytraeverywhere$capLandingChurn(BlockPos destination, boolean appendDestination, CallbackInfo ci) {
@@ -185,6 +192,16 @@ public abstract class ElytraProcessMixin {
 			landingRetries = 0; // fresh flight
 			elytraeverywhere$landingHandled = false; // a new user flight -> allow the End takeover to run again
 			return;
+		}
+		// While following: suppress the auto-landing sequence unless the safety trigger fired
+		// (shouldLandForSafety = almost out of durability or fireworks — that we must respect).
+		if (ElytraFollowTracker.followActive) {
+			final boolean safetyLanding = ((ElytraProcessAccessor) (Object) this).elytraeverywhere$shouldLandForSafety();
+			if (!safetyLanding) {
+				EELog.log("[elytrafollow] suppressed landing pathTo0 (follow active)");
+				ci.cancel();
+				return;
+			}
 		}
 		if (landingRetries > MAX_LANDING_RETRIES) {
 			EELog.log("[landing] giving up auto-landing after {} retries - gliding in instead (avoids native context-churn crash)", landingRetries);
